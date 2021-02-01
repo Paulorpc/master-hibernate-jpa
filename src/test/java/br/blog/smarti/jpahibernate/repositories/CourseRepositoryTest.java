@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
-import org.junit.AfterClass;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,15 +43,26 @@ public class CourseRepositoryTest {
 	@DirtiesContext
 	void should_find_by_id() {
 		Course courseDb = courseRepo.findById(1L);
-		assertThat(course).isNotNull();
+		assertThat(courseDb).isNotNull();
 		assertEquals(course.getName(), courseDb.getName());
+		
+		courseDb = courseRepo.findById_NamedQuery(1L);
+		assertThat(courseDb).isNotNull();
+		assertEquals(course.getName(), courseDb.getName());
+	}
+	
+	@Test
+	@DirtiesContext
+	void should_not_find_by_id() {
+		Course courseDb = courseRepo.findById(2L);
+		assertThat(courseDb).isNull();
 	}
 	
 	@Test
 	@DirtiesContext
 	void should_find_one_by_name() {
 		Course courseDb = courseRepo.findByName("Curso 1");
-		assertThat(course).isNotNull();
+		assertThat(courseDb).isNotNull();
 		assertEquals(course.getName(), courseDb.getName());
 	}
 	
@@ -60,10 +70,10 @@ public class CourseRepositoryTest {
 	@DirtiesContext
 	void should_findAll() {
 		this.setupList();
-		ArrayList<Course> list = (ArrayList<Course>) courseRepo.findAll();
+		ArrayList<Course> list = (ArrayList<Course>) courseRepo.findAll_NamedQuery();
 		assertEquals(10, list.size());
 		Assertions.assertThat(list.get(9).getName()).containsIgnoringCase("curso 10");
-		courseRepo.findAll().stream().forEach(System.out::println);
+		list.stream().forEach(System.out::println);
 	}
 	
 	@Test
@@ -73,43 +83,43 @@ public class CourseRepositoryTest {
 		assertEquals(courseDeleted.getId(), course.getId());
 		assertEquals(course.getName(), courseDeleted.getName());
 		
-		course = courseRepo.findById(1L);
-		assertThat(course).isNull();
+		Course courseDb = courseRepo.findById(1L);
+		assertThat(courseDb).isNull();
 	}
 	
 	@Test 
 	@DirtiesContext
 	void should_change_name() {
-		Course courseSaved = courseRepo.playWithEntityManager();
-		assertThat(courseSaved).isNotNull();
-		assertNotEquals("Curso MODELO", courseSaved.getName());
-		assertThat(courseSaved.getName()).contains("setName() é persistido no banco");
+		Course courseDb = courseRepo.playWithEntityManager();
+		assertThat(courseDb).isNotNull();
+		assertNotEquals("Curso MODELO", courseDb.getName());
+		assertThat(courseDb.getName()).contains("setName() é persistido no banco");
 	}
 	
 	@Test
 	@DirtiesContext
 	void should_not_change_name() {
-		Course courseSaved = courseRepo.playWithEntityManager_forcingFlushDetach();
-		assertThat(courseSaved).isNotNull();
-		assertEquals("Curso MODELO", courseSaved.getName());
-		assertThat(courseSaved.getName()).doesNotContain("não é persistido no banco");
+		Course courseDb = courseRepo.playWithEntityManager_forcingFlushDetach();
+		assertThat(courseDb).isNotNull();
+		assertEquals("Curso MODELO", courseDb.getName());
+		assertThat(courseDb.getName()).doesNotContain("não é persistido no banco");
 	}
 	
 	@Test
 	@DirtiesContext
 	void should_not_change_name_forced_refresh() {
-		Course courseSaved = courseRepo.playWithEntityManager_forcingRefresh();
-		assertThat(courseSaved).isNotNull();
-		assertEquals("Curso MODELO", courseSaved.getName());
-		assertThat(courseSaved.getName()).doesNotContain("não é persistido no banco");
+		Course courseDb = courseRepo.playWithEntityManager_forcingRefresh();
+		assertThat(courseDb).isNotNull();
+		assertEquals("Curso MODELO", courseDb.getName());
+		assertThat(courseDb.getName()).doesNotContain("não é persistido no banco");
 	}
 	
 	@Test
 	@DirtiesContext
 	void should_change_name_forced_refresh_after_flush() {
-		Course courseSaved = courseRepo.playWithEntityManager_forcingRefreshAfterFlush();
-		assertThat(courseSaved).isNotNull();
-		assertNotEquals("Curso MODELO", courseSaved.getName());
-		assertThat(courseSaved.getName()).contains("é persistido no banco");
+		Course courseDb = courseRepo.playWithEntityManager_forcingRefreshAfterFlush();
+		assertThat(courseDb).isNotNull();
+		assertNotEquals("Curso MODELO", courseDb.getName());
+		assertThat(courseDb.getName()).contains("é persistido no banco");
 	}
 }

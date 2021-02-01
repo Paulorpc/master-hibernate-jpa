@@ -2,13 +2,10 @@ package br.blog.smarti.jpahibernate.entities;
 
 import java.time.LocalDateTime;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -17,57 +14,62 @@ import org.hibernate.annotations.UpdateTimestamp;
 import lombok.Builder;
 
 @Entity
-@Table(name="student")
-public class Student {
-	
+@Table(name = "review")
+public class Review {
+
 	@Id
 	@GeneratedValue
 	private Long id;
+
+	private String description;
 	
-	@Column(nullable = false)
-	private String name;
-	
+	private String rating;
+
 	@CreationTimestamp
 	private LocalDateTime createdDate;
-	
+
 	@UpdateTimestamp
 	private LocalDateTime updatedDate;
-	
-	@OneToOne(fetch=FetchType.LAZY)
-	private Passport passport;
-	
-	public Student() {}
-	
+
+	public Review() {
+		super();
+	}
+
 	@Builder
-	public Student(Long id, String name, Passport passport) {
+	public Review(Long id, String description, String rating) {
 		super();
 		this.id = id;
-		this.name = name;
-		this.passport = passport;
+		this.description = description;
+		this.rating = rating;
 	}
-	
-	
+
 	public Long getId() {
 		return id;
 	}
+
 	public void setId(Long id) {
 		this.id = id;
 	}
-	public String getName() {
-		return name;
+
+	public String getDescription() {
+		return description;
 	}
-	public void setName(String name) {
-		this.name = name;
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
-	public Passport getPassport() {
-		return passport;
+	
+	public String getRating() {
+		return rating;
 	}
-	public void setPassport(Passport passport) {
-		this.passport = passport;
+
+	public void setRating(String rating) {
+		this.rating = rating;
 	}
 
 	@Override
 	public String toString() {
-		return "Student [id=" + id + ", name=" + name + "]";
+		return "Review [id=" + id + ", description=" + description + ", rating=" +rating + "]";
 	}
+
 }

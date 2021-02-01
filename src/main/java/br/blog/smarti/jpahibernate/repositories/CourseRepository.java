@@ -27,8 +27,19 @@ public class CourseRepository {
 		Course c = em.find(Course.class, id);
 		return c;
 	}
+	
+	// using namedQuery
+	public Course findById_NamedQuery(Long id) {
+		LOG.info("find course by id using named query: {}", id);
+		return (Course) em.createNamedQuery("getCourseById")
+				   		  .setParameter("id", id)
+				  		  .getResultStream()
+				  		  .findFirst()
+				  		  .orElse(null);
+	}
 
 	
+	// using native query
 	public Course findByName(String name) {
 		LOG.info("find course by name: {}", name);
 		String sql = "select * from course where name = :name";
@@ -39,9 +50,10 @@ public class CourseRepository {
 						  .orElse(null);
 	}
 
-	public List<Course> findAll() {
-		LOG.info("find all courses");
-		return em.createNativeQuery("select * from course", Course.class)
+	// using namedQuery
+	public List<Course> findAll_NamedQuery() {
+		LOG.info("find all courses using named query");
+		return em.createNamedQuery("getAllCourses")
 				 .getResultList();
 	}
 
@@ -49,6 +61,8 @@ public class CourseRepository {
 		if (c.getId() == null) {
 			LOG.info("saving course");
 			em.persist(c);
+			
+			// feito flush para forçar a persistência e retornar o ID. 
 			em.flush();
 		}
 		else {

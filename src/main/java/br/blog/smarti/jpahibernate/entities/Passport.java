@@ -2,7 +2,6 @@ package br.blog.smarti.jpahibernate.entities;
 
 import java.time.LocalDateTime;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -17,57 +16,65 @@ import org.hibernate.annotations.UpdateTimestamp;
 import lombok.Builder;
 
 @Entity
-@Table(name="student")
-public class Student {
-	
+@Table(name = "passport")
+public class Passport {
+
 	@Id
 	@GeneratedValue
 	private Long id;
-	
+
 	@Column(nullable = false)
-	private String name;
-	
+	private String number;
+
+	// mappedBy indica o owner relationship, ou seja, o atributo da entidade que
+	// receberá a FK na tabela.
+	@OneToOne(fetch = FetchType.LAZY, mappedBy = "passport")
+	private Student student;
+
 	@CreationTimestamp
 	private LocalDateTime createdDate;
-	
+
 	@UpdateTimestamp
 	private LocalDateTime updatedDate;
-	
-	@OneToOne(fetch=FetchType.LAZY)
-	private Passport passport;
-	
-	public Student() {}
-	
+
+	public Passport() {
+		super();
+	}
+
 	@Builder
-	public Student(Long id, String name, Passport passport) {
+	public Passport(Long id, String number) {
 		super();
 		this.id = id;
-		this.name = name;
-		this.passport = passport;
+		this.number = number;
 	}
-	
-	
+
 	public Long getId() {
 		return id;
 	}
 	public void setId(Long id) {
 		this.id = id;
 	}
-	public String getName() {
-		return name;
+	public String getNumber() {
+		return number;
 	}
-	public void setName(String name) {
-		this.name = name;
+	public void setNumber(String number) {
+		this.number = number;
 	}
-	public Passport getPassport() {
-		return passport;
+	public Student getStudent() {
+		return student;
 	}
-	public void setPassport(Passport passport) {
-		this.passport = passport;
+	public void setStudent(Student student) {
+		this.student = student;
+	}
+	public LocalDateTime getCreatedDate() {
+		return createdDate;
+	}
+	public LocalDateTime getUpdatedDate() {
+		return updatedDate;
 	}
 
 	@Override
 	public String toString() {
-		return "Student [id=" + id + ", name=" + name + "]";
+		return "Passport [id=" + id + ", number=" + number + "]";
 	}
 }
