@@ -11,11 +11,6 @@ o uso da propriedade abaixo permite ver os logs a nível de debug e ter uma melh
 logging.level.root=debug
 ```
 
-### SOME USEFULL ANNOTATION
-- `@Entity` Java Bean de entidade relacional. Indica a tabela e colunas que deverão ser gerenciadas pelo JPA.
-- `@Id` primary key
-- `@GeneratedValue` irá gerar o ID sequencial automático, mas permite fazer um insert manual com ID específico.
-
 
 ### PROPRIEDADES E DESCRIÇÕES
 application.properties
@@ -36,4 +31,10 @@ logging.level.org.hibernate.stat=debug
 spring.jpa.show-sql=true
 spring.jpa.properties.format_sql=true
 logging.level.org.hibernate.type=debug
+```
+
+### PADRAO FORMATACAO
+Utilizado padrao de estilo de formatação com o plugin fmt-maven-plugin. 
+```shell
+mvn com.coveo:fmt-maven-plugin:format
 ```
