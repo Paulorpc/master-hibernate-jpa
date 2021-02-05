@@ -1,5 +1,7 @@
 package br.blog.smarti.jpahibernate.repositories;
 
+import java.util.Optional;
+
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
@@ -12,7 +14,6 @@ import br.blog.smarti.jpahibernate.entities.Passport;
 
 @Repository
 @Transactional
-@SuppressWarnings("unchecked")
 public class PassportRepository {
 
 	private Logger LOG = LoggerFactory.getLogger(this.getClass());
@@ -26,6 +27,7 @@ public class PassportRepository {
 		return p;
 	}
 
+	@SuppressWarnings("unchecked")
 	public Passport findByNumber(String number) {
 		LOG.info("find passport by number: {}", number);
 		String sql = "select * from passport where number = :number";

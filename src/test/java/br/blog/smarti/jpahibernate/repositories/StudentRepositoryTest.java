@@ -2,6 +2,11 @@ package br.blog.smarti.jpahibernate.repositories;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.IntStream;
 
 import javax.transaction.Transactional;
 
@@ -15,7 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
+import br.blog.smarti.jpahibernate.builders.CourseFactory;
 import br.blog.smarti.jpahibernate.builders.StudentFactory;
+import br.blog.smarti.jpahibernate.entities.Course;
 import br.blog.smarti.jpahibernate.entities.Passport;
 import br.blog.smarti.jpahibernate.entities.Student;
 
@@ -44,7 +51,7 @@ public class StudentRepositoryTest {
 	 * objeto passport setado.
 	 */
 	@Test
-	void saving_student_with_passport() throws NoSuchFieldException, SecurityException {
+	void should_save_student_with_passport() throws NoSuchFieldException, SecurityException {
 		Student studentNew = StudentFactory.newBuiler().getSample();
 		studentRepo.save(studentNew);
 
@@ -61,7 +68,7 @@ public class StudentRepositoryTest {
 	 * configurado para LAZY
 	 */
 	@Test
-	void should_not_getPassport_doesnt_have_transaction() throws NoSuchFieldException, SecurityException {
+	void should_not_getPassport_doesnt_has_transaction() throws NoSuchFieldException, SecurityException {
 		Student studentNew = StudentFactory.newBuiler().getSample();
 		studentRepo.save(studentNew);
 
@@ -83,7 +90,7 @@ public class StudentRepositoryTest {
 	 */
 	@Test
 	@Transactional
-	void should_getPassport_have_transaction() throws NoSuchFieldException, SecurityException {
+	void should_getPassport_has_transaction() throws NoSuchFieldException, SecurityException {
 		Student studentNew = StudentFactory.newBuiler().getSample();
 		studentRepo.save(studentNew);
 
@@ -101,7 +108,7 @@ public class StudentRepositoryTest {
 	 * é necessário uma transação como no caso acima.
 	 */
 	@Test
-	void should_getPassport_doesnt_have_transaction() throws NoSuchFieldException, SecurityException {
+	void should_getPassport_doesnt_has_transaction() throws NoSuchFieldException, SecurityException {
 		Student studentNew = StudentFactory.newBuiler().getSample();
 		studentRepo.save(studentNew);
 
@@ -124,7 +131,7 @@ public class StudentRepositoryTest {
 	 * fazer o select do passport, faz o get do student e o seta no passport.
 	 */
 	@Test
-	void should_getStudent_have_transaction_in_find_method() throws NoSuchFieldException, SecurityException {
+	void should_getStudent_has_transaction_in_find_method() throws NoSuchFieldException, SecurityException {
 		Student studentNew = StudentFactory.newBuiler().getSample();
 		studentRepo.save(studentNew);
 
@@ -134,5 +141,89 @@ public class StudentRepositoryTest {
 
 		LOG.info(passport.getStudent().toString());
 	}
+
+	/***
+	 * O atributo courses não foi inicializado ao fazer o select do Student porque o
+	 * fetch type do atributo na entidade é LAZY por default. Portanto, ele é feito
+	 * forçando a inicialização do proxy do hibernate, pois apenas rodando o getter
+	 * não é recuperado os dados, acredito que por ser uma collection (lista).
+	 */
+	@Test
+	void should_getCourses_has_hibernateInitialization_in_find_method() throws NoSuchFieldException, SecurityException {
+		Student student = studentRepo.findByIdWithCourses(20001L);
+		
+		assertThat(student).isNotNull();
+		assertThat(student.getName()).isNotNull();
+		assertEquals(3, student.getCourses().size());
+		
+		LOG.info(student.getCourses().toString());
+	}
+
+	/***
+	 * O atributo courses não foi inicializado ao fazer o select do Student porque o
+	 * fetch type do atributo na entidade é LAZY por default. Portanto, irá gerar
+	 * exception de collection, pois não estamos forçando a inicialização do proxy e
+	 * nem adicionando a @Transactional neste método, apesar de o find rodar numa
+	 * transação. Resultando deve ser oposto ao método
+	 * should_getCourses_has_hibernateInitialization_in_find_method.
+	 */
+	@Test
+	void should_not_getCourses_has_no_hibernateInitialization_in_find_method()
+			throws NoSuchFieldException, SecurityException {
+		Student student = studentRepo.findByIdWithCourses(20001L, false);
+		
+		assertThat(student).isNotNull();
+		assertThat(student.getName()).isNotNull();
+		assertThrows(LazyInitializationException.class, () -> {
+			assertEquals(3, student.getCourses().size());
+		});
+
+	}
+	
+	
+	@Test
+	void should_save_new_student_and_courses() throws NoSuchFieldException, SecurityException {
+		Student studentNew = StudentFactory.newBuiler().getSample();
+		List<Course> courses = new ArrayList<>();
+		
+		IntStream.range(0,9).forEach(m -> {
+			courses.add(CourseFactory.newBuiler().getSample());
+		});
+		studentRepo.saveStudentAndCourses(studentNew, courses);
+
+		Student student = studentRepo.findByNameWithPassport(studentNew.getName());
+		assertThat(student).isNotNull();
+		
+		student.setCourses(studentRepo.findAllStudentCourses(student.getId()));
+		assertThat(student.getCourses().size()).isEqualTo(9);
+		LOG.info(student.getCourses().toString());
+	}
+	
+	@Test
+	void should_update_student_and_save_courses() throws NoSuchFieldException, SecurityException {
+		Student studentNew = StudentFactory.newBuiler().getSample();
+		List<Course> courses = new ArrayList<>();
+		
+		studentNew.setId(studentRepo.save(studentNew));
+		assertThat(studentNew.getId()).isGreaterThan(0);
+		
+		String newName = "JHONNY NOVO NOME";
+		studentNew.setName(newName);
+		IntStream.range(0,9).forEach(m -> {
+			courses.add(CourseFactory.newBuiler().getSample());
+		});
+		
+		studentRepo.saveStudentAndCourses(studentNew, courses);
+
+		Student student = studentRepo.findByNameWithPassport(studentNew.getName());
+		assertThat(student).isNotNull();
+		assertEquals(newName, student.getName());
+		
+		student.setCourses(studentRepo.findAllStudentCourses(student.getId()));
+		assertThat(student.getCourses().size()).isEqualTo(9);
+		LOG.info(student.getCourses().toString());
+	}
+	
+
 
 }

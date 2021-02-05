@@ -1,16 +1,19 @@
 package br.blog.smarti.jpahibernate.repositories;
 
 import java.lang.annotation.Annotation;
+import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import br.blog.smarti.jpahibernate.entities.Course;
 import br.blog.smarti.jpahibernate.entities.Student;
 
 @Repository
@@ -43,6 +46,27 @@ public class StudentRepository {
 		return s;
 	}
 
+	public Student findByIdWithCourses(Long id) {
+		return this.findByIdWithCourses(id, true);
+	}
+
+	public Student findByIdWithCourses(Long id, boolean hibernateInitialize) {
+		LOG.info("find student by id with courses by name: {}", id);
+		Student s = this.findById(id);
+
+		/***
+		 * Este comando força a inicialização do proxy do hibernate para recuperar os
+		 * dados. Se não utilizar este método, mesmo rodando o getter abaixo, não é
+		 * recuperado os dados por ser uma collection e irá dar um exception de no
+		 * session: failed to lazily initialize a collection.
+		 */
+		if (hibernateInitialize)
+			Hibernate.initialize(s.getCourses());
+
+		s.setCourses(s.getCourses());
+		return s;
+	}
+
 	public Long save(Student s) throws NoSuchFieldException, SecurityException {
 		if (s.getId() == null) {
 			LOG.info("saving student");
@@ -59,6 +83,25 @@ public class StudentRepository {
 			em.merge(s);
 		}
 		return s.getId();
+	}
+
+	public Student saveStudentAndCourse(Student s, Course c) {
+		s.addCourse(c);
+		c.addStudent(s);
+
+		em.persist(s);
+		em.persist(c);
+
+		return s;
+	}
+
+	public Long saveStudentAndCourses(Student s, List<Course> courses) throws NoSuchFieldException, SecurityException {
+		courses.forEach(c -> {
+			s.addCourse(c);
+			c.addStudent(s);
+			em.persist(c);
+		});
+		return this.save(s);
 	}
 
 	public Student deleteById(Long id) {
@@ -97,5 +140,16 @@ public class StudentRepository {
 			}
 		}
 		return isTransient;
+	}
+
+	/***
+	 * Course é transiente, fetch type LAZY, usado estratégia do
+	 * Hibernate.initialize() para forçar a inicialização do proxy e recuperar os
+	 * dados dos cursos do student.
+	 */
+	public List<Course> findAllStudentCourses(Long studentId) {
+		Student student = this.findById(studentId);
+		Hibernate.initialize(student.getCourses());
+		return student.getCourses();
 	}
 }
