@@ -6,11 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import br.blog.smarti.jpahibernate.builders.CourseFactory;
+import br.blog.smarti.jpahibernate.builders.StudentFactory;
 import br.blog.smarti.jpahibernate.entities.Course;
 import br.blog.smarti.jpahibernate.entities.Review;
+import br.blog.smarti.jpahibernate.entities.Student;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.assertj.core.util.Lists;
 import org.hibernate.LazyInitializationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -158,7 +162,7 @@ public class CourseRepositoryTest {
 
     courseRepo.saveCourseReviews(course.getId(), list);
 
-    Course courseDb = courseRepo.findCourseWithReviews(course.getId());
+    Course courseDb = courseRepo.findCourseRetrieveReviews(course.getId());
     assertThat(courseDb).isNotNull();
     assertThat(courseDb.getReviews()).isNotNull();
     assertEquals(4, courseDb.getReviews().size());
@@ -174,7 +178,7 @@ public class CourseRepositoryTest {
   @Test
   @DirtiesContext
   void should_get_course_with_reviews_using_joinFetch() {
-    Course courseDb = courseRepo.findCourseWithReviews(course.getId());
+    Course courseDb = courseRepo.findCourseRetrieveReviews(course.getId());
 
     assertThat(courseDb).isNotNull();
     assertThat(courseDb.getName()).isNotNull();
@@ -195,7 +199,7 @@ public class CourseRepositoryTest {
   @DirtiesContext
   void should_not_get_course_with_reviews_forcing_hibernateInitialization() {
     Course courseDb =
-        courseRepo.findCourseWithReviewsForcingHibernateInitialization(course.getId());
+        courseRepo.findCourseRetrieveReviewsForcingHibernateInitialization(course.getId());
 
     assertThat(courseDb).isNotNull();
     assertThat(courseDb.getName()).isNotNull();
@@ -204,5 +208,52 @@ public class CourseRepositoryTest {
         () -> {
           assertEquals(2, courseDb.getReviews().size());
         });
+  }
+
+  @Test
+  @DirtiesContext
+  void should_get_all_courses_whithout_students() throws Exception {
+    List<Course> courses = courseRepo.findAllCoursesWithoutStudents();
+    assertThat(courses).isNotEmpty();
+    assertEquals(course.getName(), courses.get(0).getName());
+    LOG.info(courses.toString());
+
+    System.out.println("\nUm curso não deve ter students: \n");
+    this.getDistinctedCoursesAndPrintStudentsList();
+
+    List<Student> students = Lists.newArrayList(StudentFactory.newBuiler().getSample());
+    courseRepo.saveCourseAndStudents(course, students);
+
+    System.out.println("\ntodos cursos devem ter students: \n");
+    this.getDistinctedCoursesAndPrintStudentsList();
+
+    courses = courseRepo.findAllCoursesWithoutStudents();
+    assertThat(courses).isEmpty();
+  }
+
+  @Test
+  @DirtiesContext
+  void should_get_all_courses_with_2_students() throws Exception {
+    List<Course> courses = courseRepo.findAllCoursesWithMoreThanStudents(1);
+    assertThat(courses).isNotEmpty();
+    assertEquals(1, courses.size());
+    LOG.info(courses.toString());
+  }
+
+  @Test
+  void should_find_all_courses_ordered_by_ammount_of_students_joinned() {
+    List<Course> courses = courseRepo.findAllCoursesOrderedByStudents();
+    courses.forEach(c -> c.setStudents(courseRepo.findAllStudentsByCourseId(c.getId())));
+    courses.stream().map(c -> c.getStudents()).map(sl -> sl.size()).forEach(System.out::print);
+  }
+
+  private void getDistinctedCoursesAndPrintStudentsList() {
+    List<Course> courses = courseRepo.findAllRetrieveStudents();
+    courses = courses.stream().distinct().collect(Collectors.toList());
+    courses.stream()
+        .map(c -> c.getStudents())
+        .collect(Collectors.toList())
+        .forEach(System.out::println);
+    ;
   }
 }

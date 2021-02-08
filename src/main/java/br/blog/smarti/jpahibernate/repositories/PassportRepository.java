@@ -1,62 +1,26 @@
 package br.blog.smarti.jpahibernate.repositories;
 
 import br.blog.smarti.jpahibernate.entities.Passport;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+/***
+ * REPOSITORY EXTENDENDO JpaRepository QUE JÁ IMPLEMENTA TODOS MÉTODOS BÁSICOS
+ * ALÉM DE DAR SUPORTE PARA CRIAÇÃO DE QUERIES DE FORMA SIMPLES ATRAVÉS DO
+ * PRÓPRIO NOME DO MÉTODO, POR EXEMPLO: findAllByNumberContaining(). TAMBÉM FOI
+ * EXTENDIDO UMA INTERFACE PERSONALIZADA PARA CRIAÇÃO DE QUERIES MAIS COMPLEXAS
+ * DE FORMA QUE SUA IMPLEMENTAÇÃO FIQUE ISOLADA, AINDA ASSIM, TODOS OS MÉTODOS
+ * FICAM ATRELADOS A MESMA INTERFACE PassportRepository.
+ */
+
 @Repository
-@Transactional
-public class PassportRepository {
+public interface PassportRepository
+    extends JpaRepository<Passport, Long>, PassportRepositoryCustom {
 
-  private Logger LOG = LoggerFactory.getLogger(this.getClass());
+  Optional<Passport> findByNumber(String number);
 
-  @Autowired EntityManager em;
-
-  public Passport findById(Long id) {
-    LOG.info("find passport by id: {}", id);
-    Passport p = em.find(Passport.class, id);
-    return p;
-  }
-
-  @SuppressWarnings("unchecked")
-  public Passport findByNumber(String number) {
-    LOG.info("find passport by number: {}", number);
-    String sql = "select * from passport where number = :number";
-    return (Passport)
-        em.createNativeQuery(sql, Passport.class)
-            .setParameter("number", number)
-            .getResultStream()
-            .findFirst()
-            .orElse(null);
-  }
-
-  public Passport findByNumberWithStudent(String number) {
-    LOG.info("ind passport with student by number: {}", number);
-    Passport p = findByNumber(number);
-    p.setStudent(p.getStudent());
-    return p;
-  }
-
-  public Long save(Passport p) {
-    if (p.getId() == null) {
-      LOG.info("saving passport");
-      em.persist(p);
-      em.flush();
-    } else {
-      LOG.info("updating passport id: " + p.getId());
-      em.merge(p);
-    }
-    return p.getId();
-  }
-
-  public Passport deleteById(Long id) {
-    LOG.info("deleting passport by id: " + id);
-    Passport p = findById(id);
-    em.remove(p);
-    return p;
-  }
+  List<Passport> findAllByNumberContaining(String number, Sort sort);
 }

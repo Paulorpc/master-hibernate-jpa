@@ -1,8 +1,9 @@
 package br.blog.smarti.jpahibernate.repositories;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import br.blog.smarti.jpahibernate.builders.CourseFactory;
 import br.blog.smarti.jpahibernate.builders.StudentFactory;
@@ -11,12 +12,13 @@ import br.blog.smarti.jpahibernate.entities.Passport;
 import br.blog.smarti.jpahibernate.entities.Student;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
 import javax.transaction.Transactional;
 import org.hibernate.LazyInitializationException;
-import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +35,18 @@ public class StudentRepositoryTest {
 
   @Autowired private PassportRepository passportRepo;
 
-  @SuppressWarnings("deprecation")
-  @Rule
-  private ExpectedException exception = ExpectedException.none();
+  Student studentNew;
+
+  @BeforeEach
+  void setup() throws NoSuchFieldException, SecurityException {
+    studentNew = StudentFactory.newBuiler().getSample();
+    studentRepo.save(studentNew);
+  }
+
+  @AfterEach
+  void tearsDown() {
+    studentRepo.deleteById(studentNew.getId());
+  }
 
   /***
    * Foi feito uma "brincadeira" no StudentRepository para verificar se o objeto
@@ -47,34 +58,32 @@ public class StudentRepositoryTest {
    */
   @Test
   void should_save_student_with_passport() throws NoSuchFieldException, SecurityException {
-    Student studentNew = StudentFactory.newBuiler().getSample();
-    studentRepo.save(studentNew);
-
-    Student student = studentRepo.findByNameWithPassport(studentNew.getName());
+    Student student = studentRepo.findByNameRetrievePassport(studentNew.getName());
     assertThat(student).isNotNull();
-    assertThat(student.getPassport()).isNotNull();
+    assertEquals(studentNew.getPassport().getNumber(), student.getPassport().getNumber());
+    LOG.info(student.toString());
+    LOG.info(student.getPassport().toString());
   }
 
   /***
-   * É esperado exception ao fazer o student.getPassport(), pois é necessários
-   * estar numa transação para que o hibernate possa recuperar os dados do
-   * database automaticamente. Lembrando que o atributo passport não é populado ao
-   * fazer o select do Student porque o fetch type do atributo na entidade está
+   * É esperado ao fazer o student.getPassport(), pois é necessários estar numa
+   * transação para que o hibernate possa recuperar os dados do database
+   * automaticamente. Lembrando que o atributo passport não é populado ao fazer o
+   * select do Student porque o fetch type do atributo na entidade está
    * configurado para LAZY
    */
-  @Test
+  @Test()
   void should_not_getPassport_doesnt_has_transaction()
       throws NoSuchFieldException, SecurityException {
-    Student studentNew = StudentFactory.newBuiler().getSample();
-    studentRepo.save(studentNew);
-
     Student student = studentRepo.findByName(studentNew.getName());
     assertThat(student).isNotNull();
     assertEquals(studentNew.getName(), student.getName());
 
-    exception.expect(LazyInitializationException.class);
-
-    student.getPassport();
+    assertThrows(
+        LazyInitializationException.class,
+        () -> {
+          assertEquals(studentNew.getPassport().getNumber(), student.getPassport().getNumber());
+        });
   }
 
   /***
@@ -87,9 +96,6 @@ public class StudentRepositoryTest {
   @Test
   @Transactional
   void should_getPassport_has_transaction() throws NoSuchFieldException, SecurityException {
-    Student studentNew = StudentFactory.newBuiler().getSample();
-    studentRepo.save(studentNew);
-
     Student student = studentRepo.findByName(studentNew.getName());
     assertThat(student).isNotNull();
     assertEquals(studentNew.getName(), student.getName());
@@ -105,15 +111,13 @@ public class StudentRepositoryTest {
    */
   @Test
   void should_getPassport_doesnt_has_transaction() throws NoSuchFieldException, SecurityException {
-    Student studentNew = StudentFactory.newBuiler().getSample();
-    studentRepo.save(studentNew);
-
     Student student = studentRepo.findByName(studentNew.getName());
     assertThat(student).isNotNull();
     assertEquals(studentNew.getName(), student.getName());
 
-    Passport studentPassport = passportRepo.findByNumber(studentNew.getPassport().getNumber());
-    student.setPassport(studentPassport);
+    Optional<Passport> studentPassport =
+        passportRepo.findByNumber(studentNew.getPassport().getNumber());
+    student.setPassport(studentPassport.get());
 
     assertThat(student.getPassport()).isNotNull();
     LOG.info(studentPassport.toString());
@@ -129,14 +133,11 @@ public class StudentRepositoryTest {
   @Test
   void should_getStudent_has_transaction_in_find_method()
       throws NoSuchFieldException, SecurityException {
-    Student studentNew = StudentFactory.newBuiler().getSample();
-    studentRepo.save(studentNew);
-
-    Passport passport = passportRepo.findByNumberWithStudent(studentNew.getPassport().getNumber());
-    assertThat(passport).isNotNull();
-    assertThat(passport.getStudent()).isNotNull();
-
-    LOG.info(passport.getStudent().toString());
+    Optional<Passport> passport =
+        passportRepo.findByNumberRetrieveStudents(studentNew.getPassport().getNumber());
+    assertTrue(passport.isPresent());
+    assertEquals(studentNew.getName(), passport.get().getStudent().getName());
+    LOG.info(passport.get().getStudent().toString());
   }
 
   /***
@@ -180,6 +181,7 @@ public class StudentRepositoryTest {
   }
 
   @Test
+  @DirtiesContext
   void should_save_new_student_and_courses() throws NoSuchFieldException, SecurityException {
     Student studentNew = StudentFactory.newBuiler().getSample();
     List<Course> courses = new ArrayList<>();
@@ -191,7 +193,7 @@ public class StudentRepositoryTest {
             });
     studentRepo.saveStudentAndCourses(studentNew, courses);
 
-    Student student = studentRepo.findByNameWithPassport(studentNew.getName());
+    Student student = studentRepo.findByNameRetrievePassport(studentNew.getName());
     assertThat(student).isNotNull();
 
     student.setCourses(studentRepo.findAllStudentCourses(student.getId()));
@@ -200,6 +202,7 @@ public class StudentRepositoryTest {
   }
 
   @Test
+  @DirtiesContext
   void should_update_student_and_save_courses() throws NoSuchFieldException, SecurityException {
     Student studentNew = StudentFactory.newBuiler().getSample();
     List<Course> courses = new ArrayList<>();
@@ -217,12 +220,19 @@ public class StudentRepositoryTest {
 
     studentRepo.saveStudentAndCourses(studentNew, courses);
 
-    Student student = studentRepo.findByNameWithPassport(studentNew.getName());
+    Student student = studentRepo.findByNameRetrievePassport(studentNew.getName());
     assertThat(student).isNotNull();
     assertEquals(newName, student.getName());
 
     student.setCourses(studentRepo.findAllStudentCourses(student.getId()));
     assertThat(student.getCourses().size()).isEqualTo(9);
     LOG.info(student.getCourses().toString());
+  }
+
+  @Test
+  void should_get_all_students_with_a_such_passport_pattern() {
+    List<Student> students = studentRepo.findAllStudentsByPassport("1234");
+    assertEquals(3, students.size());
+    LOG.info(students.toString());
   }
 }

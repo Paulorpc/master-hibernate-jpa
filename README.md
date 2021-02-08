@@ -38,3 +38,6 @@ Utilizado padrao de estilo de formatação com o plugin fmt-maven-plugin.
 ```shell
 mvn com.coveo:fmt-maven-plugin:format
 ```
+
+### QUERIES
+1. Couse -> NamedQuery
