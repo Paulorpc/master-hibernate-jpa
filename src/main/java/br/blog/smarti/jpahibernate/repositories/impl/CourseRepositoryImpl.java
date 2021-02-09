@@ -6,6 +6,7 @@ import br.blog.smarti.jpahibernate.entities.Student;
 import br.blog.smarti.jpahibernate.repositories.CourseRepository;
 import br.blog.smarti.jpahibernate.repositories.StudentRepository;
 import java.util.List;
+import javax.persistence.EntityGraph;
 import javax.persistence.EntityManager;
 import org.hibernate.Hibernate;
 import org.slf4j.Logger;
@@ -202,15 +203,14 @@ public class CourseRepositoryImpl implements CourseRepository {
   }
 
   /***
-   * Atributo transient, buscando review através do @Transactional. Utilizar o JPQL com join fetch é
-   * talvez a melhor forma de fazer o "getter" para recuperar os dados das instâncias que estão
-   * configuradas como tipo LAZY e evitar exception por no-session. Em temros de performance tb é
-   * interesante, pois é feito um único select. Outra opção é o Hibernate.initialization(), mas
-   * teste this.findCourseWithReviewsForcingHibernateInitialization() ele não funciounou, apesar de
-   * estar sendo usado para StudentRepository.findByIdWithCourses()
+   * SOLUÇÃO PARA PROBLEMA N+1
+   *
+   * Utilizar o JPQL com join fetch é talvez a melhor forma de recuperar os dados das instâncias que
+   * estão configuradas como LAZY e evitar exception por no-session. Em termos de performance tb é
+   * interesante, pois é feito um único select. Outra opção é o Entity GRaph.
    */
-  public Course findCourseRetrieveReviews(Long courseId) {
-    LOG.info("Find course with reviews by id: {}", courseId);
+  public Course findCourseRetrieveReviews_JoinFetch(Long courseId) {
+    LOG.info("Find course by id retrieving reviews (join fetch): {}", courseId);
 
     StringBuilder sql = new StringBuilder();
     sql.append("from Course cs ");
@@ -226,17 +226,42 @@ public class CourseRepositoryImpl implements CourseRepository {
   }
 
   /***
-   * Atributo transient, buscando review através do @Transactional. O mesmo problema por
-   * LazyInitializationException para collection foi resolvido no
-   * StudentRepository.findByIdWithCourses() forçando a inicialização do proxy, mas por alguma razão
-   * aqui não funciona. Foi resolvido utilizando JOIN FETCH por JPQL em this.findCourseWithReviews()
+   * SOLUÇÃO PARA PROBLEMA N+1
+   *
+   * Utilizar o EntityGraph é talvez a melhor forma de recuperar os dados das instâncias que estão
+   * configuradas como LAZY e evitar exception por no-session. Em termos de performance tb é
+   * interesante, pois é feito um único select. Outra opção é o Join Fetch.
    */
-  public Course findCourseRetrieveReviewsForcingHibernateInitialization(Long courseId) {
-    LOG.info("Find course with reviews by id: {}", courseId);
+  public Course findCourseRetrieveReviews_EntityGraph(Long courseId) {
+    LOG.info("Find course by id retrieving reviews (entity graph): {}", courseId);
+
+    EntityGraph<Course> eg = em.createEntityGraph(Course.class);
+    eg.addSubgraph("reviews");
+
+    Course c =
+        em.createQuery("from Course c where id = : id", Course.class)
+            .setParameter("id", courseId)
+            .setHint("javax.persistence.loadgraph", eg)
+            .getSingleResult();
+
+    return c;
+  }
+
+  /***
+   * SOLUÇÃO PARA PROBLEMA N+1 (PARCIALMENTE)
+   *
+   * Utilizar o Hibernate.Initialization para recuperar os dados das instâncias que estão
+   * configuradas como LAZY e evitar exception por no-session é simples. Em termos de performance tb
+   * é interesante, pois é feito apenas dois selects, um ao carregar o objeto principal e novamente
+   * ao carregar o objeto lazy como o initialization. Para resolver o problema de N+1 as melhores
+   * soluções são Join Fetch e Entity Graph.
+   */
+  public Course findCourseRetrieveReviews_HibernateInitialization(Long courseId) {
+    LOG.info("Find course by id retrieving reviews (hibernate.initialization): {}", courseId);
 
     Course c = this.findById(courseId);
-    Hibernate.initialize(c.getStudents());
-    c.setStudents(c.getStudents());
+    Hibernate.initialize(c.getReviews());
+    c.setReviews(c.getReviews());
 
     return c;
   }

@@ -53,10 +53,9 @@ public class StudentRepositoryImpl implements StudentRepository {
     Student s = this.findById(id);
 
     /***
-     * Este comando força a inicialização do proxy do hibernate para recuperar os
-     * dados. Se não utilizar este método, mesmo rodando o getter abaixo, não é
-     * recuperado os dados por ser uma collection e irá dar um exception de no
-     * session: failed to lazily initialize a collection.
+     * Este comando força a inicialização do proxy do hibernate para recuperar os dados. Se não
+     * utilizar este método, mesmo rodando o getter abaixo, não é recuperado os dados por ser uma
+     * collection e irá dar um exception de no session: failed to lazily initialize a collection.
      */
     if (hibernateInitialize) Hibernate.initialize(s.getCourses());
 
@@ -111,9 +110,8 @@ public class StudentRepositoryImpl implements StudentRepository {
   }
 
   /***
-   * Course é transiente, fetch type LAZY, usado estratégia do
-   * Hibernate.initialize() para forçar a inicialização do proxy e recuperar os
-   * dados dos cursos do student.
+   * Course é transiente, fetch type LAZY, usado estratégia do Hibernate.initialize() para forçar a
+   * inicialização do proxy e recuperar os dados dos cursos do student.
    */
   public List<Course> findAllStudentCourses(Long studentId) {
     LOG.info("find all student's courses by student id: " + studentId);
@@ -123,13 +121,37 @@ public class StudentRepositoryImpl implements StudentRepository {
   }
 
   /***
-   * Retorna todos students com determinado passport (LIKE). Using JPQL to make easier
-   * the query structure.
+   * Retorna todos students com determinado passport (LIKE). Using JPQL to make easier the query
+   * structure.
    */
   public List<Student> findAllStudentsByPassport(String passport) {
     LOG.info("find all students with a such passport pattern using like: " + passport);
     return em.createQuery(
             "from Student s where s.passport.number like '%" + passport + "%'", Student.class)
         .getResultList();
+  }
+
+  @Override
+  public List<Student> findAll() {
+    return em.createQuery("from Student s", Student.class).getResultList();
+  }
+
+  /***
+   * Native Queries não sofrem alteração do hibernate para adicionar a condição da anotação @Where
+   * para o uso do soft delete, por exemplo.
+   */
+  @Override
+  public List<Student> findAllIsDeletedTrue() {
+    return em.createNativeQuery("select * from student where is_deleted = true", Student.class)
+        .getResultList();
+  }
+
+  @Override
+  public Student findByIdIsDeletedTrue(Long studentId) {
+    return (Student) em.createNativeQuery("select * from student where id = :id and is_deleted = true", Student.class)
+        .setParameter("id", studentId)
+        .getResultStream()
+        .findFirst()
+        .orElse(null);
   }
 }

@@ -10,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 @SpringBootTest
@@ -35,5 +38,27 @@ public class PassportRepositoryTest {
     assertThat(passports).isNotNull();
     assertEquals(40001L, passports.get(0).getId());
     LOG.info(passports.toString());
+  }
+
+  @Test
+  void should_find_all_passports_orderedby_number_and_updateDate_desc() {
+    Sort sort = Sort.by("number").descending().and(Sort.by("updatedDate").descending());
+    List<Passport> passports = passportRepo.findAll(sort);
+    LOG.info(passports.toString());
+  }
+
+  @Test
+  void should_find_all_passports_with_pagination() {
+    PageRequest pageRequest = PageRequest.of(0, 2);
+    Page<Passport> passportsPage = passportRepo.findAll(pageRequest);
+    assertEquals(0, passportsPage.getNumber());
+    assertEquals(2, passportsPage.getContent().size());
+    LOG.info(passportsPage.getContent().toString());
+
+    Pageable secondPageable = passportsPage.nextPageable();
+    passportsPage = passportRepo.findAll(secondPageable);
+    assertEquals(1, passportsPage.getNumber());
+    assertEquals(1, passportsPage.getContent().size());
+    LOG.info(passportsPage.getContent().toString());
   }
 }

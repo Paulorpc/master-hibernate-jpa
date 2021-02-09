@@ -3,13 +3,16 @@ package br.blog.smarti.jpahibernate.repositories;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import br.blog.smarti.jpahibernate.builders.CourseFactory;
 import br.blog.smarti.jpahibernate.builders.StudentFactory;
+import br.blog.smarti.jpahibernate.entities.Address;
 import br.blog.smarti.jpahibernate.entities.Course;
 import br.blog.smarti.jpahibernate.entities.Passport;
 import br.blog.smarti.jpahibernate.entities.Student;
+import br.blog.smarti.jpahibernate.enums.EstadosEnum;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -49,11 +52,10 @@ public class StudentRepositoryTest {
   }
 
   /***
-   * Foi feito uma "brincadeira" no StudentRepository para verificar se o objeto
-   * filho passport (fk) é transiente ou não. Se ele for transiente, ou seja, não
-   * foi adicionado o cascade.PERSIST para fazer a persistencia dos objetos
-   * filhos, então é feita a persistência do objeto manualmente. Sendo assim,
-   * sendo transiente ou não nunca irá falhar ao persistir um Student mesmo com o
+   * Foi feito uma "brincadeira" no StudentRepository para verificar se o objeto filho passport (fk)
+   * é transiente ou não. Se ele for transiente, ou seja, não foi adicionado o cascade.PERSIST para
+   * fazer a persistencia dos objetos filhos, então é feita a persistência do objeto manualmente.
+   * Sendo assim, sendo transiente ou não nunca irá falhar ao persistir um Student mesmo com o
    * objeto passport setado.
    */
   @Test
@@ -66,11 +68,10 @@ public class StudentRepositoryTest {
   }
 
   /***
-   * É esperado ao fazer o student.getPassport(), pois é necessários estar numa
-   * transação para que o hibernate possa recuperar os dados do database
-   * automaticamente. Lembrando que o atributo passport não é populado ao fazer o
-   * select do Student porque o fetch type do atributo na entidade está
-   * configurado para LAZY
+   * É esperado ao fazer o student.getPassport(), pois é necessários estar numa transação para que o
+   * hibernate possa recuperar os dados do database automaticamente. Lembrando que o atributo
+   * passport não é populado ao fazer o select do Student porque o fetch type do atributo na
+   * entidade está configurado para LAZY
    */
   @Test()
   void should_not_getPassport_doesnt_has_transaction()
@@ -87,11 +88,10 @@ public class StudentRepositoryTest {
   }
 
   /***
-   * O atributo passport não foi inicializado ao fazer o select do Student porque
-   * o fetch type do atributo na entidade está configurado para LAZY. Portanto,
-   * ele é feito ao fazer a chamada do método .getStudent(), para isso é
-   * necessário a transação. Ao alterar para EAGER, fazendo a inicialização de um
-   * Student, também seria populado o atributo passport.
+   * O atributo passport não foi inicializado ao fazer o select do Student porque o fetch type do
+   * atributo na entidade está configurado para LAZY. Portanto, ele é feito ao fazer a chamada do
+   * método .getStudent(), para isso é necessário a transação. Ao alterar para EAGER, fazendo a
+   * inicialização de um Student, também seria populado o atributo passport.
    */
   @Test
   @Transactional
@@ -106,8 +106,8 @@ public class StudentRepositoryTest {
   }
 
   /***
-   * neste caso é recuperado os dados do passport de forma manual, no entanto não
-   * é necessário uma transação como no caso acima.
+   * neste caso é recuperado os dados do passport de forma manual, no entanto não é necessário uma
+   * transação como no caso acima.
    */
   @Test
   void should_getPassport_doesnt_has_transaction() throws NoSuchFieldException, SecurityException {
@@ -124,11 +124,11 @@ public class StudentRepositoryTest {
   }
 
   /***
-   * Teste de pegar o Student no objeto passport pelo relacionamento bidirecional.
-   * o atributo student não foi inicializado ao fazer o select do passport porque
-   * o fetch type do atributo na entidade está configurado para LAZY. Para isso
-   * foi criado um método no repositório que está dentro de uma transação que após
-   * fazer o select do passport, faz o get do student e o seta no passport.
+   * Teste de pegar o Student no objeto passport pelo relacionamento bidirecional. o atributo
+   * student não foi inicializado ao fazer o select do passport porque o fetch type do atributo na
+   * entidade está configurado para LAZY. Para isso foi criado um método no repositório que está
+   * dentro de uma transação que após fazer o select do passport, faz o get do student e o seta no
+   * passport.
    */
   @Test
   void should_getStudent_has_transaction_in_find_method()
@@ -141,10 +141,10 @@ public class StudentRepositoryTest {
   }
 
   /***
-   * O atributo courses não foi inicializado ao fazer o select do Student porque o
-   * fetch type do atributo na entidade é LAZY por default. Portanto, ele é feito
-   * forçando a inicialização do proxy do hibernate, pois apenas rodando o getter
-   * não é recuperado os dados, acredito que por ser uma collection (lista).
+   * O atributo courses não foi inicializado ao fazer o select do Student porque o fetch type do
+   * atributo na entidade é LAZY por default. Portanto, ele é feito forçando a inicialização do
+   * proxy do hibernate, pois apenas rodando o getter não é recuperado os dados, acredito que por
+   * ser uma collection (lista).
    */
   @Test
   void should_getCourses_has_hibernateInitialization_in_find_method()
@@ -159,11 +159,10 @@ public class StudentRepositoryTest {
   }
 
   /***
-   * O atributo courses não foi inicializado ao fazer o select do Student porque o
-   * fetch type do atributo na entidade é LAZY por default. Portanto, irá gerar
-   * exception de collection, pois não estamos forçando a inicialização do proxy e
-   * nem adicionando a @Transactional neste método, apesar de o find rodar numa
-   * transação. Resultando deve ser oposto ao método
+   * O atributo courses não foi inicializado ao fazer o select do Student porque o fetch type do
+   * atributo na entidade é LAZY por default. Portanto, irá gerar exception de collection, pois não
+   * estamos forçando a inicialização do proxy e nem adicionando a @Transactional neste método,
+   * apesar de o find rodar numa transação. Resultando deve ser oposto ao método
    * should_getCourses_has_hibernateInitialization_in_find_method.
    */
   @Test
@@ -234,5 +233,50 @@ public class StudentRepositoryTest {
     List<Student> students = studentRepo.findAllStudentsByPassport("1234");
     assertEquals(3, students.size());
     LOG.info(students.toString());
+  }
+
+  /***
+   * O registro não é removido da base de dados para a entidade Student uma vez que esta configurada
+   * como soft delete. A anotação do hibernate para isso é @SqlDelete e para forçar recuperar os
+   * dados com o campo is_deleted = true, é usado a anotação @Where tb na entidade.
+   */
+  @Test
+  void should_soft_delete_one_student() {
+    List<Student> students = studentRepo.findAll();
+    assertThat(students.size()).isGreaterThan(3);
+    Student deletedStudent = students.get(2);
+
+    studentRepo.deleteById(deletedStudent.getId());
+    Student findDeleted = studentRepo.findById(deletedStudent.getId());
+    assertNull(findDeleted);
+
+    findDeleted = studentRepo.findByIdIsDeletedTrue(deletedStudent.getId());
+    assertTrue(findDeleted.isDeleted());
+  }
+
+  /***
+   * inserção de objeto @Embedable. Apenas uma abstração de campos de uma tabela para dentro de uma
+   * classe.
+   */
+  @Test
+  void should_insert_student_with_address() throws NoSuchFieldException, SecurityException {
+    Student student =
+        Student.builder()
+            .name("Paulo Cezar")
+            .address(
+                Address.builder()
+                    .logradouro("Rua ABC")
+                    .numero("200")
+                    .bairro("mirante sul")
+                    .cep("14022322")
+                    .cidade("Ribeirão Preto")
+                    .uf(EstadosEnum.SP)
+                    .build())
+            .build();
+
+    studentRepo.save(student);
+    Student studentDb = studentRepo.findById(student.getId());
+    assertEquals(student.getAddress().getCep(), studentDb.getAddress().getCep());
+    assertEquals("SP", student.getAddress().getUf().name());
   }
 }

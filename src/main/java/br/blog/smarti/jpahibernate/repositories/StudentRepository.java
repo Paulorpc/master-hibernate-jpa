@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 public interface StudentRepository {
 
   public Student findById(Long id);
+  
+  public Student findByIdIsDeletedTrue(Long studentId);
 
   public Student findByName(String name);
 
@@ -28,6 +30,10 @@ public interface StudentRepository {
       throws NoSuchFieldException, SecurityException;
 
   public Student deleteById(Long id);
+
+  public List<Student> findAll();
+
+  public List<Student> findAllIsDeletedTrue();
 
   public List<Course> findAllStudentCourses(Long studentId);
 

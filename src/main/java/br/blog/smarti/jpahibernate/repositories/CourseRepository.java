@@ -9,6 +9,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CourseRepository {
 
+  public Course findCourseRetrieveReviews_JoinFetch(Long courseId);
+
+  public Course findCourseRetrieveReviews_HibernateInitialization(Long courseId);
+
+  public Course findCourseRetrieveReviews_EntityGraph(Long courseId);
+
   public List<Course> findAll();
 
   public Course findById(Long id);
@@ -34,10 +40,6 @@ public interface CourseRepository {
   public Course playWithEntityManager_forcingRefreshAfterFlush();
 
   public void saveCourseReviews(Long courseId, List<Review> reviews);
-
-  public Course findCourseRetrieveReviews(Long courseId);
-
-  public Course findCourseRetrieveReviewsForcingHibernateInitialization(Long courseId);
 
   public List<Course> findAllCoursesWithoutStudents();
 

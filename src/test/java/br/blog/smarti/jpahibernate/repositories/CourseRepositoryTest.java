@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.util.Lists;
-import org.hibernate.LazyInitializationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -162,7 +161,7 @@ public class CourseRepositoryTest {
 
     courseRepo.saveCourseReviews(course.getId(), list);
 
-    Course courseDb = courseRepo.findCourseRetrieveReviews(course.getId());
+    Course courseDb = courseRepo.findCourseRetrieveReviews_JoinFetch(course.getId());
     assertThat(courseDb).isNotNull();
     assertThat(courseDb.getReviews()).isNotNull();
     assertEquals(4, courseDb.getReviews().size());
@@ -170,44 +169,63 @@ public class CourseRepositoryTest {
   }
 
   /***
-   * O atributo review não foi inicializado porque o fetch type do atributo é LAZY
-   * por default. Portanto, ele é feito através do JOIN FETCH em JPQL, pois apenas
-   * rodando o getter não é recuperado os dados, acredito que por ser uma
-   * collection (lista).
+   * O atributo review não foi inicializado porque o fetch type do atributo é LAZY por default.
+   * Portanto, ele é feito através do JOIN FETCH em JPQL. Solução evita N+1 Problem.
    */
   @Test
   @DirtiesContext
-  void should_get_course_with_reviews_using_joinFetch() {
-    Course courseDb = courseRepo.findCourseRetrieveReviews(course.getId());
+  void should_get_course_retrieving_reviews_using_joinFetch() {
+    Course courseDb = courseRepo.findCourseRetrieveReviews_JoinFetch(course.getId());
 
     assertThat(courseDb).isNotNull();
     assertThat(courseDb.getName()).isNotNull();
-    assertEquals(2, courseDb.getReviews().size());
+    assertThat(courseDb.getReviews().size()).isGreaterThan(1);
+    assertEquals(course.getName(), courseDb.getName());
+    assertEquals(
+        course.getReviews().get(0).getDescription(), courseDb.getReviews().get(0).getDescription());
 
     LOG.info(courseDb.getReviews().toString());
   }
 
   /***
-   * O atributo reviews não foi inicializado ao fazer o select porque o fetch type
-   * do atributo na entidade é LAZY por default. Está gerando exception de
-   * collection, mesmo forçando a inicialização do proxy, não sei ao certo o pq.
-   * Foi resolvido utilizando JPQL no método this.should_save_course_with_reviews
-   * e forçando a inicialização do proxy em
-   * StudentRepositoryTest.should_getCourses_has_hibernateInitialization_in_find_method.
+   * O atributo review não foi inicializado porque o fetch type do atributo é LAZY por default.
+   * Portanto, ele é feito através do Entity Graph. Solução evita N+1 Problem.
    */
   @Test
   @DirtiesContext
-  void should_not_get_course_with_reviews_forcing_hibernateInitialization() {
-    Course courseDb =
-        courseRepo.findCourseRetrieveReviewsForcingHibernateInitialization(course.getId());
+  void should_get_course_retrieving_reviews_using_entitygraph() {
+    Course courseDb = courseRepo.findCourseRetrieveReviews_EntityGraph(course.getId());
 
     assertThat(courseDb).isNotNull();
     assertThat(courseDb.getName()).isNotNull();
-    assertThrows(
-        LazyInitializationException.class,
-        () -> {
-          assertEquals(2, courseDb.getReviews().size());
-        });
+    assertThat(courseDb.getReviews().size()).isGreaterThan(1);
+    assertEquals(course.getName(), courseDb.getName());
+    assertEquals(
+        course.getReviews().get(0).getDescription(), courseDb.getReviews().get(0).getDescription());
+
+    LOG.info(courseDb.getReviews().toString());
+  }
+
+  /***
+   * O atributo review não foi inicializado porque o fetch type do atributo é LAZY por default.
+   * Portanto, ele é feito através do Hibernate.Initialization. Solução evita N+1 Problem em termos.
+   * As soluções de EntityGraph e JoinFetch fazem um único select, já a Hibernate.Initialization faz
+   * dois, pois inicialmente é carregado o objeto pai e depois inicializado o getter através do
+   * proxy para o objeto fiho, quando é feito o segundo select. a
+   */
+  @Test
+  @DirtiesContext
+  void should_get_course_retrieving_reviews_using_hibernateInitialization() {
+    Course courseDb = courseRepo.findCourseRetrieveReviews_HibernateInitialization(course.getId());
+
+    assertThat(courseDb).isNotNull();
+    assertThat(courseDb.getName()).isNotNull();
+    assertThat(courseDb.getReviews().size()).isGreaterThan(1);
+    assertEquals(course.getName(), courseDb.getName());
+    assertEquals(
+        course.getReviews().get(0).getDescription(), courseDb.getReviews().get(0).getDescription());
+
+    LOG.info(courseDb.getReviews().toString());
   }
 
   @Test
