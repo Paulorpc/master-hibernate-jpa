@@ -18,8 +18,7 @@ public class StudentRepositoryImpl implements StudentRepository {
 
   private Logger LOG = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired
-  EntityManager em;
+  @Autowired EntityManager em;
 
   public Student findById(Long id) {
     LOG.info("find student by id: {}", id);
@@ -30,8 +29,11 @@ public class StudentRepositoryImpl implements StudentRepository {
   public Student findByName(String name) {
     LOG.info("find student by name: {}", name);
     String sql = "from Student s where s.name = :name";
-    return em.createQuery(sql, Student.class).setParameter("name", name).getResultStream()
-        .findFirst().orElse(null);
+    return em.createQuery(sql, Student.class)
+        .setParameter("name", name)
+        .getResultStream()
+        .findFirst()
+        .orElse(null);
   }
 
   public Student findByNameRetrievePassport(String name) {
@@ -58,8 +60,7 @@ public class StudentRepositoryImpl implements StudentRepository {
     LOG.info("find student by id with option to retrieve courses: {}", id);
     Student s = this.findById(id);
 
-    if (hibernateInitialize)
-      Hibernate.initialize(s.getCourses());
+    if (hibernateInitialize) Hibernate.initialize(s.getCourses());
 
     s.setCourses(s.getCourses());
     return s;
@@ -98,11 +99,12 @@ public class StudentRepositoryImpl implements StudentRepository {
   public Long saveStudentAndCourses(Student s, List<Course> courses)
       throws NoSuchFieldException, SecurityException {
     LOG.info("saving student and courses. {}.", s.getId());
-    courses.forEach(c -> {
-      s.addCourse(c);
-      c.addStudent(s);
-      em.persist(c);
-    });
+    courses.forEach(
+        c -> {
+          s.addCourse(c);
+          c.addStudent(s);
+          em.persist(c);
+        });
     return this.save(s);
   }
 
@@ -114,7 +116,7 @@ public class StudentRepositoryImpl implements StudentRepository {
   }
 
   /***
-   * Course é transiente, fetch type LAZY, usado estratégia do Hibernate.initialize() para forçar a
+   * Course tem a busca do tipo LAZY, usado estratégia do Hibernate.initialize() para forçar a
    * inicialização do proxy e recuperar os dados dos cursos do student.
    */
   public List<Course> findAllStudentCourses(Long studentId) {
@@ -130,8 +132,9 @@ public class StudentRepositoryImpl implements StudentRepository {
    */
   public List<Student> findAllStudentsByPassport(String passport) {
     LOG.info("find all students with a such passport pattern using like: " + passport);
-    return em.createQuery("from Student s where s.passport.number like '%" + passport + "%'",
-        Student.class).getResultList();
+    return em.createQuery(
+            "from Student s where s.passport.number like '%" + passport + "%'", Student.class)
+        .getResultList();
   }
 
   public List<Student> findAll() {
@@ -155,9 +158,12 @@ public class StudentRepositoryImpl implements StudentRepository {
    */
   public Student findByIdIsDeletedTrue(Long studentId) {
     LOG.info("find student by id with boolean isDeleted = true");
-    return (Student) em
-        .createNativeQuery("select * from student where id = :id and is_deleted = true",
-            Student.class)
-        .setParameter("id", studentId).getResultStream().findFirst().orElse(null);
+    return (Student)
+        em.createNativeQuery(
+                "select * from student where id = :id and is_deleted = true", Student.class)
+            .setParameter("id", studentId)
+            .getResultStream()
+            .findFirst()
+            .orElse(null);
   }
 }

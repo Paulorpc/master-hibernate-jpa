@@ -31,7 +31,7 @@ public class CourseRepositoryImpl implements CourseRepository {
     Course c = em.find(Course.class, id);
     return c;
   }
-  
+
   /***
    * findById using NAMED QUERY
    */
@@ -54,7 +54,7 @@ public class CourseRepositoryImpl implements CourseRepository {
         .findFirst()
         .orElse(null);
   }
-  
+
   public List<Course> findAll() {
     LOG.info("find all courses");
     return em.createQuery("from Course c", Course.class).getResultList();
@@ -69,7 +69,8 @@ public class CourseRepositoryImpl implements CourseRepository {
   }
 
   /***
-   * Método save modificado para salvar também os reviews usando EM diretamente.
+   * Método save modificado para salvar também os reviews usando EM diretamente. Já que não foi
+   * definido o cascade, é um atributo transiente.
    */
   public Long save(Course c) {
     if (c.getId() == null) {
@@ -100,10 +101,10 @@ public class CourseRepositoryImpl implements CourseRepository {
     }
     return c.getId();
   }
-  
-  
+
   /***
-   * Método save modificado para salvar também os students usando StudentRepository.
+   * Método save modificado para salvar também os students usando StudentRepository. Já que não foi
+   * definido o cascade, é um atributo transiente.
    */
   public Long saveCourseAndStudents(Course c, List<Student> students) throws Exception {
     LOG.info("saving course and students. courseId: {}", c.getId());
@@ -132,7 +133,7 @@ public class CourseRepositoryImpl implements CourseRepository {
 
   /***
    * Salva os reviews de um determinado curso. Método criado para persistir os revies com o curso_id
-   * (fk), já que não foi definido o cascade, é um atributo transiente.
+   * (fk). Já que não foi definido o cascade, é um atributo transiente.
    */
   public void saveCourseReviews(Long courseId, List<Review> reviews) {
     LOG.info("saving course's reviews. courseId: {}", courseId);
@@ -236,8 +237,8 @@ public class CourseRepositoryImpl implements CourseRepository {
   }
 
   /***
-   * Find all students associated in a course. Student list is transient, so using initialize
-   * retrieve data from hibernate.
+   * Find all students associated in a course. Student list lazy, so using initialize to retrieve
+   * data from hibernate.
    */
   public List<Student> findAllStudentsByCourseId(Long courseId) {
     LOG.info("Find all students by course id: {}", courseId);

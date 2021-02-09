@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public interface StudentRepository {
 
   public Student findById(Long id);
-  
+
   public Student findByIdIsDeletedTrue(Long studentId);
 
   public Student findByName(String name);

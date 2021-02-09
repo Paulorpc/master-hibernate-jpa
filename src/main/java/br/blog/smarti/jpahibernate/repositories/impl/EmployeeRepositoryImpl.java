@@ -13,13 +13,13 @@ import org.springframework.stereotype.Component;
 @Component
 @Transactional
 public class EmployeeRepositoryImpl implements EmployeeRepository {
-  
+
   private Logger LOG = LoggerFactory.getLogger(this.getClass());
 
   @Autowired EntityManager em;
 
   /***
-   * Método persisti ou alterar entidade 
+   * Método persisti ou alterar entidade
    */
   public Long save(Employee e) {
     LOG.info("save employee: {}", e.toString());

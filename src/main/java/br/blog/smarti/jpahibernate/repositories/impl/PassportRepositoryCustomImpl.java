@@ -22,12 +22,9 @@ public class PassportRepositoryCustomImpl implements PassportRepositoryCustom {
    * PassportRepository é instânciado. Provavelmente está tentando inicializar antes de criar o
    * bean.
    */
-  @Lazy
-  @Autowired
-  PassportRepository passportRepo;
+  @Lazy @Autowired PassportRepository passportRepo;
 
-  @Autowired
-  EntityManager em;
+  @Autowired EntityManager em;
 
   @Transactional
   public Optional<Passport> findByNumberRetrieveStudents(String number) {

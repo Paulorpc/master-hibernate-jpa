@@ -51,7 +51,7 @@ public class ReviewRepositoryImpl implements ReviewRepository {
     reviews.forEach(r -> em.remove(r));
     return reviews;
   }
-  
+
   /***
    * Using NATIVE QUERY
    */
@@ -61,7 +61,9 @@ public class ReviewRepositoryImpl implements ReviewRepository {
 
     sql.append("delete from review ");
     sql.append("where course_id = :courseId");
-    
-    em.createNativeQuery(sql.toString(), Review.class).setParameter("courseId", courseId).executeUpdate();
+
+    em.createNativeQuery(sql.toString(), Review.class)
+        .setParameter("courseId", courseId)
+        .executeUpdate();
   }
 }
