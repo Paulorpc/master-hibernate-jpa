@@ -18,7 +18,8 @@ public class StudentRepositoryImpl implements StudentRepository {
 
   private Logger LOG = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired EntityManager em;
+  @Autowired
+  EntityManager em;
 
   public Student findById(Long id) {
     LOG.info("find student by id: {}", id);
@@ -29,11 +30,8 @@ public class StudentRepositoryImpl implements StudentRepository {
   public Student findByName(String name) {
     LOG.info("find student by name: {}", name);
     String sql = "from Student s where s.name = :name";
-    return em.createQuery(sql, Student.class)
-        .setParameter("name", name)
-        .getResultStream()
-        .findFirst()
-        .orElse(null);
+    return em.createQuery(sql, Student.class).setParameter("name", name).getResultStream()
+        .findFirst().orElse(null);
   }
 
   public Student findByNameRetrievePassport(String name) {
@@ -44,31 +42,38 @@ public class StudentRepositoryImpl implements StudentRepository {
     return s;
   }
 
-  public Student findByIdWithCourses(Long id) {
-    return this.findByIdWithCourses(id, true);
+  public Student findByIdRetriveCourses(Long id) {
+    LOG.info("find student by id retrieving courses: {}", id);
+    return this.findByIdRetriveCourses(id, true);
   }
 
-  public Student findByIdWithCourses(Long id, boolean hibernateInitialize) {
-    LOG.info("find student by id with courses by name: {}", id);
+  /***
+   * Hibernate.Initializatize força a inicialização do proxy do hibernate para recuperar os dados no
+   * objeto. Se não utilizar este método, mesmo rodando o getter abaixo, não é recuperado os dados
+   * por ser uma collection e irá dar um exception de no session: failed to lazily initialize a
+   * collection. Outras opções, talvez mais interessante dependendo do contexto, seria usar Join
+   * Fetch ou EntityGraph.
+   */
+  public Student findByIdRetriveCourses(Long id, boolean hibernateInitialize) {
+    LOG.info("find student by id with option to retrieve courses: {}", id);
     Student s = this.findById(id);
 
-    /***
-     * Este comando força a inicialização do proxy do hibernate para recuperar os dados. Se não
-     * utilizar este método, mesmo rodando o getter abaixo, não é recuperado os dados por ser uma
-     * collection e irá dar um exception de no session: failed to lazily initialize a collection.
-     */
-    if (hibernateInitialize) Hibernate.initialize(s.getCourses());
+    if (hibernateInitialize)
+      Hibernate.initialize(s.getCourses());
 
     s.setCourses(s.getCourses());
     return s;
   }
 
+  /***
+   * Criado método isTransiente para fazer uma brincadeira. Detalhes no comentátio do método.
+   */
   public Long save(Student s) throws NoSuchFieldException, SecurityException {
     if (s.getId() == null) {
       LOG.info("saving student");
 
       if (StudentRepository.isTransient("passport") && s.getPassport() != null) {
-        LOG.info("saving student passport (transient)");
+        LOG.info("saving student's passport (transient)");
         em.persist(s.getPassport());
       }
 
@@ -82,23 +87,22 @@ public class StudentRepositoryImpl implements StudentRepository {
   }
 
   public Student saveStudentAndCourse(Student s, Course c) {
+    LOG.info("saving student and course. {}. {}.", s.getId(), c.getId());
     s.addCourse(c);
     c.addStudent(s);
-
     em.persist(s);
     em.persist(c);
-
     return s;
   }
 
   public Long saveStudentAndCourses(Student s, List<Course> courses)
       throws NoSuchFieldException, SecurityException {
-    courses.forEach(
-        c -> {
-          s.addCourse(c);
-          c.addStudent(s);
-          em.persist(c);
-        });
+    LOG.info("saving student and courses. {}.", s.getId());
+    courses.forEach(c -> {
+      s.addCourse(c);
+      c.addStudent(s);
+      em.persist(c);
+    });
     return this.save(s);
   }
 
@@ -126,32 +130,34 @@ public class StudentRepositoryImpl implements StudentRepository {
    */
   public List<Student> findAllStudentsByPassport(String passport) {
     LOG.info("find all students with a such passport pattern using like: " + passport);
-    return em.createQuery(
-            "from Student s where s.passport.number like '%" + passport + "%'", Student.class)
-        .getResultList();
+    return em.createQuery("from Student s where s.passport.number like '%" + passport + "%'",
+        Student.class).getResultList();
   }
 
-  @Override
   public List<Student> findAll() {
+    LOG.info("find all students");
     return em.createQuery("from Student s", Student.class).getResultList();
   }
 
   /***
-   * Native Queries não sofrem alteração do hibernate para adicionar a condição da anotação @Where
+   * NATIVE QUERIES não sofrem alteração do hibernate para adicionar a condição da anotação @Where
    * para o uso do soft delete, por exemplo.
    */
-  @Override
   public List<Student> findAllIsDeletedTrue() {
+    LOG.info("find all students with boolean isDeleted = true");
     return em.createNativeQuery("select * from student where is_deleted = true", Student.class)
         .getResultList();
   }
 
-  @Override
+  /***
+   * NATIVE QUERIES não sofrem alteração do hibernate para adicionar a condição da anotação @Where
+   * para o uso do soft delete, por exemplo.
+   */
   public Student findByIdIsDeletedTrue(Long studentId) {
-    return (Student) em.createNativeQuery("select * from student where id = :id and is_deleted = true", Student.class)
-        .setParameter("id", studentId)
-        .getResultStream()
-        .findFirst()
-        .orElse(null);
+    LOG.info("find student by id with boolean isDeleted = true");
+    return (Student) em
+        .createNativeQuery("select * from student where id = :id and is_deleted = true",
+            Student.class)
+        .setParameter("id", studentId).getResultStream().findFirst().orElse(null);
   }
 }

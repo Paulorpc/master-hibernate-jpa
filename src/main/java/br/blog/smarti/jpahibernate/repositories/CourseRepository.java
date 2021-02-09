@@ -19,8 +19,6 @@ public interface CourseRepository {
 
   public Course findById(Long id);
 
-  public Course findByIdRetrieveStudents(Long id);
-
   public Course findById_NamedQuery(Long id);
 
   public Course findByName(String name);

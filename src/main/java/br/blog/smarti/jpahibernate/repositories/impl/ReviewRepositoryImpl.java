@@ -34,6 +34,10 @@ public class ReviewRepositoryImpl implements ReviewRepository {
     return r;
   }
 
+  /***
+   * Não faz muito sentido fazer desta forma. Ver: deleteAllByCourseId2.
+   * Using NATIVE QUERY
+   */
   public List<Review> deleteAllByCourseId(Long courseId) {
     LOG.info("delete reviews by course id: {}", courseId);
     StringBuilder sql = new StringBuilder();
@@ -46,5 +50,18 @@ public class ReviewRepositoryImpl implements ReviewRepository {
     List<Review> reviews = query.setParameter("courseId", courseId).getResultList();
     reviews.forEach(r -> em.remove(r));
     return reviews;
+  }
+  
+  /***
+   * Using NATIVE QUERY
+   */
+  public void deleteAllByCourseId2(Long courseId) {
+    LOG.info("delete reviews by course id: {}", courseId);
+    StringBuilder sql = new StringBuilder();
+
+    sql.append("delete from review ");
+    sql.append("where course_id = :courseId");
+    
+    em.createNativeQuery(sql.toString(), Review.class).setParameter("courseId", courseId).executeUpdate();
   }
 }

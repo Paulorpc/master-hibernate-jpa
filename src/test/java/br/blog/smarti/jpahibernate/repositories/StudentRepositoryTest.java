@@ -149,7 +149,7 @@ public class StudentRepositoryTest {
   @Test
   void should_getCourses_has_hibernateInitialization_in_find_method()
       throws NoSuchFieldException, SecurityException {
-    Student student = studentRepo.findByIdWithCourses(20001L);
+    Student student = studentRepo.findByIdRetriveCourses(20001L);
 
     assertThat(student).isNotNull();
     assertThat(student.getName()).isNotNull();
@@ -168,7 +168,7 @@ public class StudentRepositoryTest {
   @Test
   void should_not_getCourses_has_no_hibernateInitialization_in_find_method()
       throws NoSuchFieldException, SecurityException {
-    Student student = studentRepo.findByIdWithCourses(20001L, false);
+    Student student = studentRepo.findByIdRetriveCourses(20001L, false);
 
     assertThat(student).isNotNull();
     assertThat(student.getName()).isNotNull();

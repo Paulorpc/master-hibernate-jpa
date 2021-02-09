@@ -17,11 +17,17 @@ public class PassportRepositoryCustomImpl implements PassportRepositoryCustom {
 
   private Logger LOG = LoggerFactory.getLogger(this.getClass());
 
-  // Anotação @Lazy evita erro de inicialização do Spring (JpaHibernateApplication.class) quando o
-  // PassportRepository é instânciado.
-  @Lazy @Autowired PassportRepository passportRepo;
+  /***
+   * Anotação @Lazy evita erro de inicialização do Spring (JpaHibernateApplication.class) quando o
+   * PassportRepository é instânciado. Provavelmente está tentando inicializar antes de criar o
+   * bean.
+   */
+  @Lazy
+  @Autowired
+  PassportRepository passportRepo;
 
-  @Autowired EntityManager em;
+  @Autowired
+  EntityManager em;
 
   @Transactional
   public Optional<Passport> findByNumberRetrieveStudents(String number) {

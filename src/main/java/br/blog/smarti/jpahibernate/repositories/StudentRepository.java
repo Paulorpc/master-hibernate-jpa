@@ -18,9 +18,9 @@ public interface StudentRepository {
 
   public Student findByNameRetrievePassport(String name);
 
-  public Student findByIdWithCourses(Long id);
+  public Student findByIdRetriveCourses(Long id);
 
-  public Student findByIdWithCourses(Long id, boolean hibernateInitialize);
+  public Student findByIdRetriveCourses(Long id, boolean hibernateInitialize);
 
   public Long save(Student s) throws NoSuchFieldException, SecurityException;
 
